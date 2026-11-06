@@ -1,0 +1,9 @@
+# 真实模式额外依赖
+#
+# 安装（国内建议用镜像，否则依赖包下载会卡住）：
+#   pip install -r requirements-real.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+#
+# 不需要执行 patchright install chromium —— 我们用 channel="chrome" 直接驱动系统 Chrome
+
+-r requirements.txt
+patchright>=1.64

@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 招聘助手 · 控制台</title>
+<style>
+  :root{
+    --primary:#1565C0; --primary-dark:#0D47A1; --bg:#f5f7fa; --card:#fff;
+    --text:#1a1a1a; --muted:#5f6368; --border:#e2e8ee;
+    --ok:#0f9d58; --warn:#f29900; --err:#d93025; --info:#1967d2;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:"Microsoft YaHei","PingFang SC",-apple-system,sans-serif;
+    background:var(--bg); color:var(--text); font-size:14px; line-height:1.6;
+    padding-bottom:40px;
+  }
+  header{
+    background:var(--card); border-bottom:1px solid var(--border);
+    padding:14px 24px; display:flex; align-items:center; gap:16px;
+    position:sticky; top:0; z-index:20; flex-wrap:wrap;
+  }
+  .brand{font-size:17px;font-weight:700;color:var(--primary-dark);letter-spacing:.5px}
+  .badge{
+    font-size:12px;padding:3px 10px;border-radius:20px;background:#eef4fb;color:var(--primary);
+    font-weight:600;
+  }
+  .badge.off{background:#f1f3f4;color:var(--muted)}
+  .badge.mock{background:#fff4e5;color:#b06000}
+  .spacer{flex:1}
+  .controls{display:flex;gap:8px;flex-wrap:wrap}
+  button{
+    font-family:inherit;font-size:13px;padding:7px 14px;border-radius:6px;
+    border:1px solid var(--border);background:var(--card);color:var(--text);
+    cursor:pointer;transition:.15s;
+  }
+  button:hover{border-color:var(--primary);color:var(--primary)}
+  button.primary{background:var(--primary);color:#fff;border-color:var(--primary)}
+  button.primary:hover{background:var(--primary-dark);color:#fff}
+  button:disabled{opacity:.45;cursor:not-allowed}
+  main{padding:20px 24px;max-width:1440px;margin:0 auto}
+  .grid-stats{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));
+    gap:12px;margin-bottom:18px;
+  }
+  .stat{
+    background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+    padding:14px 16px;
+  }
+  .stat .k{font-size:12px;color:var(--muted);margin-bottom:6px}
+  .stat .v{font-size:24px;font-weight:700;color:var(--primary-dark);line-height:1.2}
+  .stat .v.small{font-size:18px}
+  .cols{display:grid;grid-template-columns:1.6fr 1fr;gap:16px;align-items:start}
+  @media(max-width:960px){.cols{grid-template-columns:1fr}}
+  .panel{
+    background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+    overflow:hidden;
+  }
+  .panel h2{
+    font-size:14px;font-weight:700;padding:12px 16px;border-bottom:1px solid var(--border);
+    display:flex;align-items:center;gap:8px;
+  }
+  .panel h2 .n{font-weight:400;color:var(--muted);font-size:12px}
+  .panel-body{padding:0}
+  table{width:100%;border-collapse:collapse}
+  th,td{padding:9px 12px;text-align:left;font-size:13px;border-bottom:1px solid var(--border)}
+  th{background:#fafbfc;color:var(--muted);font-weight:600;font-size:12px}
+  tbody tr{cursor:pointer}
+  tbody tr:hover{background:#f7fafd}
+  .tag{
+    display:inline-block;font-size:11px;padding:1px 7px;border-radius:4px;
+    background:#eef4fb;color:var(--primary);
+  }
+  .state{font-size:12px;padding:2px 8px;border-radius:4px;white-space:nowrap}
+  .s-pending{background:#f1f3f4;color:#5f6368}
+  .s-greeted{background:#e8f0fe;color:var(--info)}
+  .s-chatting{background:#e6f4ea;color:var(--ok)}
+  .s-qualified{background:#e6f4ea;color:var(--ok);font-weight:600}
+  .s-invited{background:#0f9d58;color:#fff;font-weight:600}
+  .s-rejected,.s-rejected_filter{background:#f1f3f4;color:#80868b}
+  .s-handed_over{background:#fef7e0;color:#b06000;font-weight:600}
+  .s-failed{background:#fce8e6;color:var(--err)}
+  .log{max-height:420px;overflow-y:auto;padding:8px 0}
+  .log-item{
+    padding:6px 16px;font-size:12.5px;border-bottom:1px solid #f4f6f8;
+    display:flex;gap:8px;align-items:flex-start;
+  }
+  .log-time{color:#9aa0a6;font-variant-numeric:tabular-nums;flex-shrink:0}
+  .log-cat{
+    flex-shrink:0;font-size:11px;padding:0 6px;border-radius:3px;background:#eef4fb;color:var(--primary);
+  }
+  .log-cat.risk{background:#fef7e0;color:#b06000}
+  .log-cat.greet{background:#e6f4ea;color:var(--ok)}
+  .log-cat.invite{background:#0f9d58;color:#fff}
+  .log-msg{flex:1;word-break:break-word}
+  .empty{padding:28px 16px;text-align:center;color:var(--muted);font-size:13px}
+  .modal{
+    position:fixed;inset:0;background:rgba(15,23,42,.45);display:none;
+    align-items:center;justify-content:center;padding:20px;z-index:50;
+  }
+  .modal.show{display:flex}
+  .modal-card{
+    background:var(--card);border-radius:12px;width:min(680px,100%);
+    max-height:86vh;overflow:hidden;display:flex;flex-direction:column;
+  }
+  .modal-head{
+    padding:16px 20px;border-bottom:1px solid var(--border);
+    display:flex;align-items:center;gap:10px;
+  }
+  .modal-head h3{font-size:15px}
+  .modal-body{overflow-y:auto;padding:16px 20px}
+  .msg{margin-bottom:12px;max-width:80%}
+  .msg .who{font-size:11px;color:var(--muted);margin-bottom:3px}
+  .msg .bubble{
+    padding:9px 13px;border-radius:10px;font-size:13.5px;line-height:1.6;word-break:break-word;
+  }
+  .msg.them .bubble{background:#f1f3f4;border-top-left-radius:2px}
+  .msg.us{margin-left:auto}
+  .msg.us .bubble{background:#e8f0fe;border-top-right-radius:2px}
+  .msg.us .who{text-align:right}
+  .meta{font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.9}
+  .meta b{color:var(--text);font-weight:600}
+  .toast{
+    position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+    background:#202124;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;
+    opacity:0;transition:.25s;pointer-events:none;z-index:99;
+  }
+  .toast.show{opacity:1}
+  @media(max-width:640px){
+    header{padding:12px 14px}
+    main{padding:14px}
+    .stat .v{font-size:20px}
+    th,td{padding:8px 9px;font-size:12px}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="brand">AI 招聘助手</span>
+  <span class="badge" id="modeBadge">—</span>
+  <span class="badge off" id="stateBadge">未启动</span>
+  <span class="badge off" id="llmBadge">模型 —</span>
+  <span class="spacer"></span>
+  <div class="controls">
+    <button class="primary" onclick="ctl('start')">开始</button>
+    <button onclick="ctl('pause')">暂停</button>
+    <button onclick="ctl('resume')">恢复</button>
+    <button onclick="ctl('stop')">停止</button>
+    <button onclick="tickOnce()">跑一轮</button>
+    <button onclick="resetDemo()">重置演示</button>
+  </div>
+</header>
+
+<main>
+  <div class="grid-stats" id="stats"></div>
+
+  <div class="cols">
+    <div class="panel">
+      <h2>候选人 <span class="n" id="candCount"></span>
+        <span class="spacer"></span>
+        <select id="jobFilter" onchange="loadCandidates()"
+          style="font-size:12px;padding:3px 8px;border:1px solid var(--border);border-radius:5px">
+          <option value="">全部岗位</option>
+        </select>
+      </h2>
+      <div class="panel-body" style="overflow-x:auto">
+        <table>
+          <thead><tr><th>姓名</th><th>岗位</th><th>分数</th><th>状态</th><th>更新</th></tr></thead>
+          <tbody id="candBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>运行日志 <span class="n">最近 120 条</span></h2>
+      <div class="log" id="logBox"></div>
+    </div>
+  </div>
+</main>
+
+<div class="modal" id="modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3 id="mTitle">候选人</h3>
+      <span class="spacer"></span>
+      <button onclick="closeModal()">关闭</button>
+    </div>
+    <div class="modal-body" id="mBody"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const STATE_TEXT = {
+  pending:"待筛选", rejected_filter:"筛选未过", prescreened:"待打招呼",
+  greeted:"已打招呼", chatting:"沟通中", qualified:"合格",
+  rejected:"不合格", invited:"已约面", handed_over:"待人工", failed:"发送失败"
+};
+
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),1800);
+}
+
+async function api(path, opts){
+  const r = await fetch(path, opts);
+  if(!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+async function loadStatus(){
+  try{
+    const s = await api('/api/status');
+    document.getElementById('modeBadge').textContent =
+      s.mode === 'real' ? '真实模式' : 'Mock 演示';
+    document.getElementById('modeBadge').className =
+      'badge' + (s.mode === 'real' ? '' : ' mock');
+
+    const running = s.running && !s.paused;
+    document.getElementById('stateBadge').textContent =
+      s.paused ? '已暂停' : (s.running ? '运行中' : '未启动');
+    document.getElementById('stateBadge').className =
+      'badge' + (running ? '' : ' off');
+
+    const lb = document.getElementById('llmBadge');
+    lb.textContent = '模型 ' + (s.llm_enabled ? s.llm_provider : '规则引擎');
+    lb.className = 'badge' + (s.llm_enabled ? '' : ' mock');
+
+    renderStats(s.stats || {});
+  }catch(e){ console.error(e); }
+}
+
+function renderStats(st){
+  const items = [
+    ['触达', st.greeted||0],
+    ['回复', st.replied||0],
+    ['合格', st.qualified||0],
+    ['约面', st.invited||0],
+    ['待人工', st.handover||0],
+    ['模型成本', (st.llm_cost||0).toFixed(3)+' 元', true],
+  ];
+  document.getElementById('stats').innerHTML = items.map(([k,v,small])=>
+    `<div class="stat"><div class="k">${k}</div><div class="v${small?' small':''}">${v}</div></div>`
+  ).join('');
+}
+
+async function loadJobs(){
+  const jobs = await api('/api/jobs');
+  const sel = document.getElementById('jobFilter');
+  jobs.forEach(j=>{
+    const o=document.createElement('option');
+    o.value=j.id; o.textContent=j.name;
+    sel.appendChild(o);
+  });
+}
+
+async function loadCandidates(){
+  const job = document.getElementById('jobFilter').value;
+  const rows = await api('/api/candidates' + (job?('?job_id='+encodeURIComponent(job)):''));
+  document.getElementById('candCount').textContent = rows.length + ' 人';
+  const body = document.getElementById('candBody');
+  if(!rows.length){
+    body.innerHTML = '<tr><td colspan="5" class="empty">暂无候选人，点「跑一轮」开始</td></tr>';
+    return;
+  }
+  body.innerHTML = rows.map(c=>`
+    <tr onclick="openCand(${c.id})">
+      <td><b>${esc(c.name||'—')}</b></td>
+      <td><span class="tag">${esc(c.job_id)}</span></td>
+      <td>${c.score==null?'—':c.score}</td>
+      <td><span class="state s-${c.state}">${STATE_TEXT[c.state]||c.state}</span></td>
+      <td style="color:var(--muted);font-size:12px">${(c.updated_at||'').slice(5,16)}</td>
+    </tr>`).join('');
+}
+
+async function loadLogs(){
+  const rows = await api('/api/events?limit=120');
+  const box = document.getElementById('logBox');
+  if(!rows.length){ box.innerHTML='<div class="empty">暂无日志</div>'; return; }
+  box.innerHTML = rows.map(e=>`
+    <div class="log-item">
+      <span class="log-time">${(e.created_at||'').slice(11,19)}</span>
+      <span class="log-cat ${e.category}">${e.category}</span>
+      <span class="log-msg">${esc(e.message)}</span>
+    </div>`).join('');
+}
+
+async function openCand(id){
+  const c = await api('/api/candidates/'+id);
+  document.getElementById('mTitle').textContent = c.name || '候选人';
+  const msgs = (c.messages||[]).map(m=>`
+    <div class="msg ${m.role==='them'?'them':'us'}">
+      <div class="who">${m.role==='them'?'候选人':'AI'}</div>
+      <div class="bubble">${esc(m.content)}</div>
+    </div>`).join('') || '<div class="empty">暂无对话</div>';
+
+  document.getElementById('mBody').innerHTML = `
+    <div class="meta">
+      <b>岗位</b> ${esc(c.job_id)}　<b>状态</b> ${STATE_TEXT[c.state]||c.state}　
+      <b>评分</b> ${c.score??'—'}<br>
+      <b>筛选/判定</b> ${esc(c.score_reason||'—')}<br>
+      ${c.invite_slot?('<b>面试时段</b> '+esc(c.invite_slot)+'<br>'):''}
+      ${c.reject_reason?('<b>淘汰原因</b> '+esc(c.reject_reason)):''}
+    </div>${msgs}`;
+  document.getElementById('modal').classList.add('show');
+}
+
+function closeModal(){ document.getElementById('modal').classList.remove('show'); }
+
+async function ctl(action){
+  try{
+    await api('/api/control/'+action, {method:'POST'});
+    toast({start:'已开始',pause:'已暂停',resume:'已恢复',stop:'已停止'}[action]||'ok');
+    refresh();
+  }catch(e){ toast('操作失败：'+e.message); }
+}
+
+async function tickOnce(){
+  toast('正在跑一轮…');
+  try{
+    const r = await api('/api/tick',{method:'POST'});
+    toast(`本轮：回复 ${r.replied||0}，打招呼 ${r.greeted||0}，判定 ${r.judged||0}`);
+    refresh();
+  }catch(e){ toast('失败：'+e.message); }
+}
+
+async function resetDemo(){
+  if(!confirm('会清空候选人、对话和统计，确定重置？')) return;
+  try{
+    await api('/api/mock/reset',{method:'POST'});
+    toast('已重置，可以重新演示');
+    refresh();
+  }catch(e){ toast('重置失败：'+e.message); }
+}
+
+function esc(s){
+  return String(s??'').replace(/[&<>"']/g, c=>({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+
+async function refresh(){
+  await Promise.all([loadStatus(), loadCandidates(), loadLogs()]);
+}
+
+loadJobs().then(refresh);
+setInterval(refresh, 6000);
+</script>
+</body>
+</html>

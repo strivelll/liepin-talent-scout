@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>求职助手 · 自动投递</title>
+<style>
+  :root{
+    --p:#1565C0; --pd:#0D47A1; --bg:#f5f7fa; --card:#fff;
+    --tx:#1a1a1a; --mu:#5f6368; --bd:#e2e8ee;
+    --ok:#0f9d58; --warn:#f29900; --err:#d93025;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Microsoft YaHei","PingFang SC",-apple-system,sans-serif;
+       background:var(--bg);color:var(--tx);font-size:14px;line-height:1.65}
+  header{background:var(--card);border-bottom:1px solid var(--bd);padding:14px 24px;
+         display:flex;align-items:center;gap:14px;flex-wrap:wrap;position:sticky;top:0;z-index:20}
+  .brand{font-size:17px;font-weight:700;color:var(--pd)}
+  .badge{font-size:12px;padding:3px 10px;border-radius:20px;background:#eef4fb;color:var(--p);font-weight:600}
+  .badge.off{background:#f1f3f4;color:var(--mu)}
+  .badge.mock{background:#fff4e5;color:#b06000}
+  .sp{flex:1}
+  button{font-family:inherit;font-size:13px;padding:7px 14px;border-radius:6px;
+         border:1px solid var(--bd);background:var(--card);color:var(--tx);cursor:pointer;transition:.15s}
+  button:hover{border-color:var(--p);color:var(--p)}
+  button.primary{background:var(--p);color:#fff;border-color:var(--p)}
+  button.primary:hover{background:var(--pd);color:#fff}
+  button:disabled{opacity:.45;cursor:not-allowed}
+  main{max-width:1400px;margin:0 auto;padding:20px 24px 50px}
+
+  .profile{background:var(--card);border:1px solid var(--bd);border-radius:10px;
+           padding:14px 18px;margin-bottom:16px;display:flex;gap:20px;flex-wrap:wrap;align-items:center}
+  .profile .who{font-size:15px;font-weight:700;color:var(--pd)}
+  .profile .meta{font-size:12.5px;color:var(--mu)}
+  .chips{display:flex;gap:6px;flex-wrap:wrap}
+  .chip{font-size:11.5px;padding:2px 8px;border-radius:4px;background:#eef4fb;color:var(--p)}
+
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:12px;margin-bottom:16px}
+  .stat{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:13px 15px}
+  .stat .k{font-size:12px;color:var(--mu);margin-bottom:3px}
+  .stat .v{font-size:24px;font-weight:700;color:var(--pd);line-height:1.15;font-variant-numeric:tabular-nums}
+  .stat.hi .v{color:var(--ok)}
+
+  .cols{display:grid;grid-template-columns:1.55fr 1fr;gap:16px;align-items:start}
+  @media(max-width:980px){.cols{grid-template-columns:1fr}}
+  .panel{background:var(--card);border:1px solid var(--bd);border-radius:10px;overflow:hidden}
+  .panel h2{font-size:14px;padding:12px 16px;border-bottom:1px solid var(--bd);
+            display:flex;align-items:center;gap:8px}
+  .panel h2 .n{font-weight:400;color:var(--mu);font-size:12px}
+  table{width:100%;border-collapse:collapse}
+  th,td{padding:8px 11px;text-align:left;font-size:13px;border-bottom:1px solid #f0f3f6}
+  th{background:#fafbfc;color:var(--mu);font-weight:600;font-size:12px}
+  tbody tr{cursor:pointer}
+  tbody tr:hover{background:#f7fafd}
+  .score{font-weight:700;font-variant-numeric:tabular-nums}
+  .score.hi{color:var(--ok)} .score.lo{color:#b0b5bb}
+  .state{font-size:11.5px;padding:2px 7px;border-radius:4px;white-space:nowrap}
+  .s-new{background:#f1f3f4;color:#5f6368}
+  .s-scored{background:#e8f0fe;color:#1967d2}
+  .s-skipped{background:#f1f3f4;color:#9aa0a6}
+  .s-greeted{background:#e8f0fe;color:#1967d2}
+  .s-chatting{background:#e6f4ea;color:var(--ok)}
+  .s-resume_pending,.s-resume_sent{background:#0f9d58;color:#fff;font-weight:600}
+  .s-resume_manual{background:#fef7e0;color:#b06000;font-weight:600}
+  .s-interview{background:#0f9d58;color:#fff;font-weight:600}
+  .s-rejected{background:#f1f3f4;color:#9aa0a6}
+  .s-greet_failed{background:#fce8e6;color:var(--err)}
+  .feed{max-height:420px;overflow-y:auto;padding:8px 0}
+  .row2{padding:6px 16px;font-size:12.5px;border-bottom:1px solid #f6f8fa;display:flex;gap:9px}
+  .row2 .t{color:#9aa0a6;flex-shrink:0;font-variant-numeric:tabular-nums}
+  .row2 .m{flex:1;word-break:break-word}
+  .empty{padding:26px 16px;text-align:center;color:var(--mu);font-size:13px}
+  .modal{position:fixed;inset:0;background:rgba(15,23,42,.45);display:none;
+         align-items:center;justify-content:center;padding:20px;z-index:50}
+  .modal.on{display:flex}
+  .mcard{background:var(--card);border-radius:12px;width:min(640px,100%);
+         max-height:86vh;display:flex;flex-direction:column;overflow:hidden}
+  .mhead{padding:15px 20px;border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:10px}
+  .mbody{overflow-y:auto;padding:16px 20px}
+  .msg{margin-bottom:11px;max-width:82%}
+  .msg .who{font-size:11px;color:var(--mu);margin-bottom:3px}
+  .msg .b{padding:9px 13px;border-radius:10px;font-size:13.5px;word-break:break-word}
+  .msg.them .b{background:#f1f3f4;border-top-left-radius:2px}
+  .msg.me{margin-left:auto}
+  .msg.me .b{background:#e8f0fe;border-top-right-radius:2px}
+  .msg.me .who{text-align:right}
+  .msg.sys .b{background:#fffbe6;color:#8a6d3b;font-size:12px;text-align:center}
+  .kvs{font-size:12.5px;color:var(--mu);margin-bottom:14px;line-height:1.9;border-bottom:1px solid var(--bd);padding-bottom:10px}
+  .kvs b{color:var(--tx)}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#202124;color:#fff;
+         padding:10px 18px;border-radius:8px;font-size:13px;opacity:0;transition:.25s;pointer-events:none;z-index:99}
+  .toast.on{opacity:1}
+</style>
+</head>
+<body>
+
+<header>
+  <span class="brand">求职助手</span>
+  <span class="badge mock" id="modeBadge">—</span>
+  <span class="badge off" id="stateBadge">未启动</span>
+  <span class="badge off" id="quotaBadge">额度 —</span>
+  <span class="sp"></span>
+  <button class="primary" onclick="ctl('start')">开始</button>
+  <button onclick="ctl('pause')">暂停</button>
+  <button onclick="runDemo()" id="demoBtn">▶ 演示一轮</button>
+  <button onclick="resetAll()">重置</button>
+</header>
+
+<main>
+  <div class="profile" id="profileBox"><span class="meta">加载画像…</span></div>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="cols">
+    <div class="panel">
+      <h2>职位池 <span class="n" id="jobCount"></span></h2>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>职位</th><th>公司</th><th>薪资</th><th>匹配</th><th>状态</th></tr></thead>
+          <tbody id="jobBody"><tr><td colspan="5" class="empty">点「演示一轮」开始</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>执行日志</h2>
+      <div class="feed" id="logBox"></div>
+    </div>
+  </div>
+</main>
+
+<div class="modal" id="modal" onclick="if(event.target===this)closeM()">
+  <div class="mcard">
+    <div class="mhead"><h3 id="mTitle" style="font-size:15px">职位</h3><span class="sp"></span>
+      <button onclick="closeM()">关闭</button></div>
+    <div class="mbody" id="mBody"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const ST = {
+  new:"待匹配", scored:"待投递", skipped:"未通过", greeted:"已投递",
+  chatting:"沟通中", resume_pending:"待发简历", resume_sent:"简历已发",
+  resume_manual:"需人工发", interview:"面试中", rejected:"已结束", greet_failed:"投递失败"
+};
+const $=id=>document.getElementById(id);
+function toast(m){const t=$('toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),1800);}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+async function api(p,o){const r=await fetch(p,o);if(!r.ok)throw new Error(await r.text());return r.json();}
+
+async function loadStatus(){
+  try{
+    const s=await api('/api/seeker/status');
+    $('modeBadge').textContent = s.mode==='real'?'真实模式':'Mock 演示';
+    $('modeBadge').className = 'badge'+(s.mode==='real'?'':' mock');
+    $('stateBadge').textContent = s.paused?'已暂停':(s.running?'运行中':'未启动');
+    $('stateBadge').className = 'badge'+((s.running&&!s.paused)?'':' off');
+    $('quotaBadge').textContent = `今日额度 ${s.quota_left}`;
+
+    const p=s.profile||{};
+    $('profileBox').innerHTML = `
+      <div><span class="who">${esc(p.name||'—')}</span>
+        <span class="meta">${esc(p.years||0)} 年 · ${esc(p.city||'')} · 期望 ${esc(p.expected||'—')}</span></div>
+      <div class="chips">${(p.skills||[]).map(x=>`<span class="chip">${esc(x)}</span>`).join('')}</div>
+      <div class="meta" style="margin-left:auto">目标：${(p.titles||[]).join(' / ')}｜简历策略：${esc(p.resume_policy||'ask')}</div>`;
+
+    const st=s.stats||{};
+    const items=[['扫描',st.scanned||0],['匹配',st.matched||0],['投递',st.greeted||0],
+                 ['回复',st.replied||0],['简历',st.resumes||0],['面试',st.interviews||0]];
+    $('stats').innerHTML = items.map(([k,v],i)=>
+      `<div class="stat ${i>=3?'hi':''}"><div class="k">${k}</div><div class="v">${v}</div></div>`).join('');
+  }catch(e){}
+}
+
+async function loadJobs(){
+  const rows = await api('/api/seeker/jobs?limit=100');
+  $('jobCount').textContent = rows.length?`${rows.length} 个`:'';
+  const b=$('jobBody');
+  if(!rows.length){b.innerHTML='<tr><td colspan="5" class="empty">暂无职位，点「演示一轮」</td></tr>';return;}
+  b.innerHTML = rows.map(j=>{
+    const sc=j.match_score;
+    const cls = sc==null?'':(sc>=65?'hi':'lo');
+    return `<tr onclick="openJob(${j.id})">
+      <td title="${esc(j.title)}">${esc((j.title||'').slice(0,16))}</td>
+      <td>${esc((j.company||'').slice(0,12))}</td>
+      <td style="color:${sc>=65?'var(--ok)':'var(--mu)'}">${esc(j.salary||'—')}</td>
+      <td class="score ${cls}">${sc??'—'}</td>
+      <td><span class="state s-${j.state}">${ST[j.state]||j.state}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+async function loadLogs(){
+  try{
+    const rows = await api('/api/events?limit=60&category=seeker');
+    const box=$('logBox');
+    if(!rows.length){box.innerHTML='<div class="empty">暂无日志</div>';return;}
+    box.innerHTML = rows.map(e=>`<div class="row2">
+      <span class="t">${(e.created_at||'').slice(11,19)}</span>
+      <span class="m">${esc(e.message)}</span></div>`).join('');
+  }catch(e){}
+}
+
+async function openJob(id){
+  const j = await api('/api/seeker/jobs/'+id);
+  $('mTitle').textContent = j.title || '职位';
+  const msgs=(j.messages||[]).map(m=>{
+    const cls = m.role==='them'?'them':(m.role==='me'?'me':'sys');
+    const who = m.role==='them'?'HR':(m.role==='me'?'我':'系统');
+    return `<div class="msg ${cls}"><div class="who">${who}</div><div class="b">${esc(m.content)}</div></div>`;
+  }).join('') || '<div class="empty">暂无对话</div>';
+
+  $('mBody').innerHTML = `<div class="kvs">
+    <b>公司</b> ${esc(j.company)}　<b>薪资</b> ${esc(j.salary||'—')}　<b>状态</b> ${ST[j.state]||j.state}<br>
+    <b>匹配分</b> ${j.match_score??'—'}　<b>匹配理由</b> ${esc(j.match_reason||'—')}<br>
+    ${j.match_pitch?`<b>招呼钩子</b> ${esc(j.match_pitch)}<br>`:''}
+    ${j.greeting?`<b>已发开场</b> ${esc(j.greeting)}`:''}
+  </div>${msgs}`;
+  $('modal').classList.add('on');
+}
+function closeM(){$('modal').classList.remove('on');}
+
+async function ctl(a){
+  try{ await api('/api/seeker/control/'+a,{method:'POST'}); toast('ok'); refresh(); }
+  catch(e){ toast('失败：'+e.message); }
+}
+
+let busy=false;
+async function runDemo(){
+  if(busy)return; busy=true;
+  const btn=$('demoBtn'); btn.disabled=true; btn.textContent='演示中…';
+  try{
+    const d = await api('/api/seeker/run?rounds=8',{method:'POST'});
+    for(const s of (d.steps||[])){
+      if(s.greeted||s.replied||s.resumes||s.matched){
+        const bits=[];
+        if(s.matched) bits.push(`匹配 ${s.matched}`);
+        if(s.greeted) bits.push(`投递 ${s.greeted}`);
+        if(s.replied) bits.push(`回复 ${s.replied}`);
+        if(s.resumes) bits.push(`发简历 ${s.resumes}`);
+        if(bits.length) await sleep(120);
+      }
+    }
+    await loadJobs(); await loadStatus(); await loadLogs();
+    const st=d.stats||{};
+    toast(`完成：扫描 ${st.scanned}｜投递 ${st.greeted}｜回复 ${st.replied}｜简历 ${st.resumes}`);
+  }catch(e){ toast('演示失败：'+e.message); }
+  finally{ busy=false; btn.disabled=false; btn.textContent='▶ 重新演示'; }
+}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+
+async function resetAll(){
+  try{ await api('/api/seeker/reset',{method:'POST'}); toast('已重置'); refresh(); }
+  catch(e){ toast('失败'); }
+}
+
+async function refresh(){ await Promise.all([loadStatus(),loadJobs(),loadLogs()]); }
+refresh();
+setInterval(refresh, 6000);
+</script>
+</body>
+</html>

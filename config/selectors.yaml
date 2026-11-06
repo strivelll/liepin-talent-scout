@@ -1,0 +1,124 @@
+# ===== BOSS 直聘页面选择器 =====
+#
+# ⚠️ 重要：以下选择器为初始模板，必须用真实账号实测确认。
+#    BOSS 前端会改版，因此：
+#    1. 每个目标元素给出多个候选，运行时按顺序尝试，命中的第一个即用；
+#    2. 改版时只需改本文件，不用动代码；
+#    3. 用 tools/selector_probe.py 可以在真实页面上批量验证哪些候选有效。
+#
+# 如何在浏览器里找选择器：
+#   1. 打开 Chrome，进入对应页面，按 F12
+#   2. 用左上角的箭头工具点击目标元素
+#   3. 右键该元素 → Copy → Copy selector
+#   4. 把结果填进对应列表的最前面
+
+pages:
+  # 候选人推荐列表页
+  recommend_list:
+    url_keywords: ["web/geek/recommend", "web/frame/recommend", "web/boss/recommend"]
+    list_container:
+      - ".geek-list"
+      - "[class*='geek-list']"
+      - "ul[class*='list']"
+    item:
+      - ".geek-list .geek-item"
+      - "[class*='geek-item']"
+      - "li[class*='card-item']"
+    # 列表页可见的信息卡字段（第一级硬筛只用这些，零成本）
+    fields:
+      name: [".geek-name", "[class*='name'] .name-text", "[class*='name']"]
+      age: [".geek-age", "[class*='age']"]
+      education: [".geek-edu", "[class*='edu']"]
+      experience: [".geek-exp", "[class*='exp']"]
+      salary: [".geek-salary", "[class*='salary']"]
+      active_status: [".geek-active", "[class*='active']", "[class*='online']"]
+      company: [".geek-company", "[class*='company']"]
+      tags: [".geek-tags span", "[class*='tag'] span"]
+    # 列表项上的"打招呼"按钮
+    greet_button:
+      - ".geek-item .btn-greet"
+      - "[class*='geek-item'] button[class*='btn']"
+      - "[class*='geek-item'] [class*='start-chat']"
+    # 是否已沟通过的标记（用于兜底去重）
+    contacted_flag:
+      - "[class*='contacted']"
+      - "[class*='already']"
+
+  # 候选人详情 / 在线简历
+  candidate_detail:
+    url_keywords: ["web/geek/detail", "web/frame/detail"]
+    resume_container:
+      - ".resume-detail"
+      - "[class*='resume-detail']"
+      - "[class*='geek-detail']"
+    fields:
+      expect_position: [".expect-position", "[class*='expect'] [class*='position']"]
+      work_history: [".work-history", "[class*='work-exp']", "[class*='experience-list']"]
+      education_history: [".edu-history", "[class*='edu-exp']"]
+      skills: [".skill-tags span", "[class*='skill'] span"]
+      self_eval: [".self-eval", "[class*='description']"]
+    # 需要消耗点数的动作（第三级才触发）
+    view_full_resume:
+      - ".btn-view-resume"
+      - "[class*='view-resume']"
+
+  # 聊天窗口
+  chat:
+    url_keywords: ["web/chat", "web/im"]
+    session_list:
+      - ".chat-session-list"
+      - "[class*='session-list']"
+    session_item:
+      - ".chat-session-list .session-item"
+      - "[class*='session-item']"
+    # 未读标记：只处理有未读的会话，避免空转
+    unread_badge:
+      - ".unread-count"
+      - "[class*='unread']"
+    session_name: [".session-name", "[class*='name']"]
+    message_list:
+      - ".chat-message-list"
+      - "[class*='message-list']"
+    message_item:
+      - ".chat-message-list .message-item"
+      - "[class*='message-item']"
+    # 区分谁发的
+    msg_from_them:
+      - "[class*='message-item'][class*='left']"
+      - "[class*='message-item'][class*='receive']"
+    msg_text: [".message-text", "[class*='text']", "[class*='content']"]
+    input_box:
+      - "textarea.chat-input"
+      - "[class*='chat-input'] textarea"
+      - "[contenteditable='true'][class*='input']"
+    send_button:
+      - ".btn-send"
+      - "[class*='send-btn']"
+      - "button[class*='send']"
+
+  # 风控与异常识别（熔断依据）
+  risk_signals:
+    captcha:
+      - "[class*='captcha']"
+      - "[class*='verify']"
+      - "iframe[src*='captcha']"
+      - "#nc_1_wrapper"
+    rate_limit:
+      - "[class*='limit']"
+      - "[class*='frozen']"
+    # 文案级识别：比选择器更可靠，作为第二重保险
+    texts:
+      daily_limit: ["今日沟通已达上限", "今日打招呼次数已用完", "明天再来"]
+      login_expired: ["请先登录", "登录已失效", "请重新登录"]
+      risk_warning: ["操作过于频繁", "请稍后再试", "账号异常"]
+      greet_success: ["已发送", "沟通中", "打招呼成功"]
+      already_contacted: ["已沟通过", "继续沟通"]
+
+# ===== 行为模拟参数 =====
+# 用于真实模式的拟人化，mock 模式忽略
+behavior:
+  click_offset_px: 6            # 点击坐标在元素内随机偏移范围（避免恒定落点中心）
+  typing_delay_ms: [40, 140]    # 逐字符输入间隔
+  scroll_steps: [2, 5]          # 滚动分几步完成
+  scroll_pause_ms: [200, 600]
+  mouse_move_steps: [8, 20]     # 鼠标轨迹插值点数

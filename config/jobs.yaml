@@ -1,0 +1,162 @@
+# ===== 岗位配置 =====
+# 每个岗位 = 一套筛选条件 + 一套对话剧本 + 一套判定标准
+# 这是系统的"岗位知识"，由客户自己维护，不依赖模型厂商。
+
+jobs:
+  - id: "sales"
+    name: "销售顾问"
+    enabled: true
+    headcount: 10
+    city: "深圳"
+
+    # ---- 第一级：信息卡硬筛（零成本，只读列表页字段）----
+    hard_filter:
+      age: { min: 20, max: 35 }
+      education: ["大专", "本科", "硕士"]      # 命中其一即通过
+      experience_years: { min: 1, max: 8 }
+      salary_expect: { max: 20000 }             # 期望薪资上限（元/月）
+      active_within_days: 7                     # 最近 7 天活跃过
+      exclude_keywords: ["实习", "兼职", "在校"]  # 出现即排除
+
+    # ---- 第二级：模型软筛（读信息卡 + 工作经历摘要）----
+    soft_filter:
+      threshold: 60
+      prompt: |
+        判断这位候选人是否适合「企业服务类销售顾问」岗位。
+        加分项：有 B 端销售、SaaS、软件、咨询服务经验；有独立开发客户能力；表达清晰。
+        减分项：纯 C 端零售；频繁跳槽（单份工作不足 6 个月）；期望薪资明显高于岗位预算。
+        只输出 JSON：{"score": 0-100, "reason": "一句话理由"}
+
+    # ---- 第三级：深度阅读（消耗点数，每日限量）----
+    deep_read:
+      enabled: true
+      only_if_score_above: 75
+
+    # ---- 打招呼 ----
+    greeting:
+      script_ids: ["sales_a", "sales_b", "sales_c"]   # 轮换使用
+      max_per_day: 40
+
+    # ---- 对话剧本 ----
+    chat:
+      persona: |
+        你是某企业服务公司的招聘专员，语气自然、简洁、像真人聊天，
+        不用书面语，不堆表情，不用"您好，感谢您的投递"这类模板腔。
+        每次回复控制在 2 句话以内。
+      company_intro: |
+        我们是一家做企业数字化服务的公司，主要帮中大型企业做业务流程系统，
+        团队 80 人左右，销售团队 20 人，客户以制造业和零售业为主。
+      # 按顺序推进的问题，AI 会自然地把它们融进对话
+      flow:
+        - key: "current_status"
+          ask: "现在是在职还是已经离职了？"
+          required: true
+        - key: "sales_type"
+          ask: "之前主要卖什么？是面向企业还是个人？"
+          required: true
+        - key: "performance"
+          ask: "去年业绩大概什么水平？有拿过 top 吗？"
+          required: true
+        - key: "salary_expect"
+          ask: "期望薪资大概多少？"
+          required: true
+        - key: "onboard_time"
+          ask: "如果合适，最快什么时候能到岗？"
+          required: false
+
+    # ---- 判定标准 ----
+    judgement:
+      pass_threshold: 65
+      criteria: |
+        合格标准（需同时满足）：
+        1. 有 B 端销售经验（面向企业客户，而非纯个人消费者）
+        2. 上一份工作持续 1 年以上
+        3. 期望薪资在岗位预算内（底薪 8-12k + 提成）
+        4. 能在一个月内到岗
+        不合格情形：明确表示只看兼职、只做远程、要求纯底薪且高于 15k、无法近期到岗。
+
+  - id: "patent_agent"
+    name: "执业专利代理人"
+    enabled: true
+    headcount: 2
+    city: "深圳"
+
+    hard_filter:
+      age: { min: 24, max: 50 }
+      education: ["本科", "硕士", "博士"]
+      experience_years: { min: 2, max: 20 }
+      salary_expect: { max: 40000 }
+      active_within_days: 14
+      exclude_keywords: ["实习", "助理", "在校"]
+      required_tags: ["专利代理人资格证", "专代"]     # 信息卡标签命中其一
+
+    soft_filter:
+      threshold: 65
+      prompt: |
+        判断这位候选人是否适合「执业专利代理人」岗位。
+        加分项：持专利代理人资格证；有电子/通信/机械领域撰写经验；有答复审查意见经验；服务过大客户。
+        减分项：仅做流程管理不做撰写；无资格证；只做商标不做专利。
+        只输出 JSON：{"score": 0-100, "reason": "一句话理由"}
+
+    deep_read:
+      enabled: true
+      only_if_score_above: 80
+
+    greeting:
+      script_ids: ["patent_a", "patent_b"]
+      max_per_day: 15
+
+    chat:
+      persona: |
+        你是某知识产权服务机构的招聘负责人，专业、直接、不绕弯子。
+        回复控制在 3 句话以内，可以问专业细节。
+      company_intro: |
+        我们是一家知识产权服务机构，主要做专利申请、复审无效、FTO 分析，
+        客户以电子和通信领域的制造企业为主，代理部 15 人。
+      flow:
+        - key: "license"
+          ask: "专利代理人资格证是什么时候拿的？"
+          required: true
+        - key: "field"
+          ask: "主要写哪个领域？电学、通信、机械还是化学？"
+          required: true
+        - key: "volume"
+          ask: "之前一年大概写多少件？OA 答复是自己做吗？"
+          required: true
+        - key: "case_type"
+          ask: "有没有做过复审无效或者 FTO？"
+          required: false
+        - key: "salary_expect"
+          ask: "现在的薪资结构是怎样的？期望多少？"
+          required: true
+
+    judgement:
+      pass_threshold: 72
+      criteria: |
+        合格标准：
+        1. 持有专利代理人资格证（硬性）
+        2. 有实际撰写经验，年撰写量 30 件以上
+        3. 能独立答复 OA
+        4. 领域与公司客户匹配（电子/通信优先）
+        不合格情形：无资格证、只做流程、年撰写量低于 15 件。
+
+# ===== 默认值（岗位未配置时回退）=====
+defaults:
+  hard_filter:
+    age: { min: 18, max: 60 }
+    education: ["大专", "本科", "硕士", "博士"]
+    experience_years: { min: 0, max: 30 }
+    salary_expect: { max: 50000 }
+    active_within_days: 14
+    exclude_keywords: ["实习", "在校"]
+  soft_filter:
+    threshold: 60
+    prompt: |
+      判断这位候选人是否与该岗位基本匹配。只输出 JSON：{"score": 0-100, "reason": "一句话理由"}
+  chat:
+    persona: "你是招聘专员，语气自然简洁，像真人聊天，每次回复不超过 2 句话。"
+    company_intro: "我们是一家正在扩张的公司。"
+    flow: []
+  judgement:
+    pass_threshold: 70
+    criteria: "候选人有相关经验、表达清晰、薪资在预算内即为合格。"

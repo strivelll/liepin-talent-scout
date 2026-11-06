@@ -1,0 +1,6 @@
+# Mock 模式与 Web 服务所需（最小依赖）
+fastapi>=0.115
+uvicorn[standard]>=0.30
+pyyaml>=6.0
+openai>=1.40
+httpx>=0.27

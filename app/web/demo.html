@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 招聘助手 · 演示</title>
+<style>
+  :root{
+    --primary:#1565C0; --dark:#0D47A1; --bg:#f5f7fa; --card:#fff;
+    --text:#1a1a1a; --muted:#5f6368; --border:#e2e8ee;
+    --ok:#0f9d58; --warn:#f29900; --err:#d93025;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:"Microsoft YaHei","PingFang SC",-apple-system,sans-serif;
+    background:var(--bg);color:var(--text);font-size:15px;line-height:1.65;
+  }
+  header{
+    background:linear-gradient(135deg,var(--dark),var(--primary));
+    color:#fff;padding:18px 28px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;
+  }
+  header h1{font-size:19px;font-weight:700;letter-spacing:.5px}
+  header .sub{font-size:12.5px;opacity:.85}
+  .acts{display:flex;gap:8px;margin-left:auto;flex-wrap:wrap}
+  .acts button{
+    font-family:inherit;font-size:13.5px;padding:8px 16px;border-radius:7px;
+    border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.12);
+    color:#fff;cursor:pointer;transition:.15s;
+  }
+  .acts button:hover{background:rgba(255,255,255,.22)}
+  .acts button.on{background:#fff;color:var(--primary);font-weight:600;border-color:#fff}
+
+  main{max-width:1180px;margin:0 auto;padding:24px 24px 60px}
+  section{display:none}
+  section.on{display:block}
+
+  .lead{
+    background:var(--card);border-left:4px solid var(--primary);border-radius:8px;
+    padding:16px 20px;margin-bottom:20px;
+  }
+  .lead h2{font-size:17px;color:var(--dark);margin-bottom:6px}
+  .lead p{font-size:14px;color:var(--muted)}
+  .lead .why{font-size:13px;color:#8a9099;margin-top:8px;font-style:normal}
+
+  .grid{display:grid;gap:16px}
+  .g3{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+  .g2{grid-template-columns:1.1fr 1fr}
+  @media(max-width:900px){.g2{grid-template-columns:1fr}}
+
+  .panel{background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+  .panel h3{
+    font-size:14px;padding:12px 16px;border-bottom:1px solid var(--border);
+    display:flex;align-items:center;gap:8px;
+  }
+  .panel h3 .tag{font-size:11px;font-weight:400;color:var(--muted)}
+  .panel .body{padding:14px 16px}
+
+  .kv{display:flex;justify-content:space-between;padding:5px 0;font-size:13.5px;border-bottom:1px dashed #eef1f4}
+  .kv:last-child{border-bottom:none}
+  .kv .k{color:var(--muted)}
+  .kv .v{font-weight:600;font-variant-numeric:tabular-nums}
+  .v.good{color:var(--ok)}
+  .v.bad{color:var(--err)}
+
+  .cipher{
+    display:flex;align-items:center;gap:12px;padding:8px 0;font-size:13.5px;
+    border-bottom:1px dashed #eef1f4;
+  }
+  .cipher:last-child{border-bottom:none}
+  .cipher .dom{
+    font-family:Consolas,monospace;color:#b3261e;background:#fdecea;
+    padding:1px 6px;border-radius:4px;font-size:12.5px;
+  }
+  .cipher .arrow{color:var(--muted)}
+  .cipher .real{font-weight:700;color:var(--ok)}
+
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{padding:7px 10px;text-align:left;border-bottom:1px solid #f0f3f6}
+  th{background:#fafbfc;color:var(--muted);font-weight:600;font-size:12px}
+  .scroll{max-height:330px;overflow-y:auto}
+
+  .big{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-bottom:18px}
+  .stat{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px}
+  .stat .k{font-size:12px;color:var(--muted);margin-bottom:4px}
+  .stat .v{font-size:26px;font-weight:700;color:var(--dark);line-height:1.15;font-variant-numeric:tabular-nums}
+  .stat.hit .v{color:var(--ok)}
+
+  .btn{
+    font-family:inherit;font-size:14.5px;padding:11px 24px;border-radius:8px;
+    border:none;background:var(--primary);color:#fff;cursor:pointer;font-weight:600;
+  }
+  .btn:hover{background:var(--dark)}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .btn.ghost{background:#fff;color:var(--primary);border:1.5px solid var(--primary)}
+  .btn.ghost:hover{background:#eef4fb}
+  .btn.danger{background:var(--err)}
+  .btn.danger:hover{background:#b3261e}
+
+  .bar{height:8px;background:#eef1f4;border-radius:5px;overflow:hidden;margin:10px 0}
+  .bar i{display:block;height:100%;background:var(--primary);width:0;transition:width .25s}
+
+  .feed{min-height:180px;max-height:300px;overflow-y:auto;font-size:13px}
+  .feed .row{
+    padding:6px 0;border-bottom:1px dashed #eef1f4;display:flex;gap:10px;align-items:baseline;
+    animation:fade .3s;
+  }
+  @keyframes fade{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+  .feed .n{color:#9aa0a6;font-variant-numeric:tabular-nums;width:42px;flex-shrink:0}
+  .feed .txt{flex:1}
+
+  .state{font-size:12px;padding:2px 8px;border-radius:4px;white-space:nowrap}
+  .s-invited{background:#0f9d58;color:#fff;font-weight:600}
+  .s-qualified{background:#e6f4ea;color:var(--ok)}
+  .s-rejected,.s-rejected_filter{background:#f1f3f4;color:#80868b}
+  .s-handed_over{background:#fef7e0;color:#b06000;font-weight:600}
+  .s-greeted{background:#e8f0fe;color:#1967d2}
+  .s-chatting{background:#e6f4ea;color:var(--ok)}
+  .s-failed{background:#fce8e6;color:var(--err)}
+  .s-pending{background:#f1f3f4;color:#5f6368}
+
+  .riskbox{
+    background:#fdecea;border:1px solid #f5c6c0;border-radius:8px;
+    padding:14px 16px;color:#8c1d18;font-size:13.5px;margin-top:12px;
+  }
+  .riskbox b{color:#b3261e}
+
+  .costcmp{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:6px}
+  @media(max-width:700px){.costcmp{grid-template-columns:1fr}}
+  .costbox{border:1px solid var(--border);border-radius:10px;padding:16px;text-align:center}
+  .costbox.old{background:#fafafa}
+  .costbox.new{background:#e8f5e9;border-color:#b7dfb9}
+  .costbox .t{font-size:13px;color:var(--muted);margin-bottom:6px}
+  .costbox .n{font-size:30px;font-weight:700;line-height:1.15}
+  .costbox.old .n{color:#9aa0a6}
+  .costbox.new .n{color:var(--ok)}
+  .costbox .d{font-size:12px;color:var(--muted);margin-top:6px}
+
+  .note{font-size:12.5px;color:var(--muted);margin-top:14px;line-height:1.7}
+  .toast{
+    position:fixed;bottom:26px;left:50%;transform:translateX(-50%);
+    background:#202124;color:#fff;padding:10px 20px;border-radius:8px;font-size:13.5px;
+    opacity:0;transition:.25s;pointer-events:none;z-index:99;
+  }
+  .toast.show{opacity:1}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>AI 招聘助手 · 演示</h1>
+    <div class="sub">BOSS 直聘 · 筛选 → 打招呼 → 对话 → 判定 → 约面</div>
+  </div>
+  <div class="acts">
+    <button id="tab1" class="on" onclick="go(1)">① 真的能操作</button>
+    <button id="tab2" onclick="go(2)">② 流程能闭环</button>
+    <button id="tab3" onclick="go(3)">③ 风险与成本</button>
+  </div>
+</header>
+
+<main>
+
+<!-- ========== 第一幕 ========== -->
+<section id="act1" class="on">
+  <div class="lead">
+    <h2>先证明一件事：这不是 PPT，是真的在操作浏览器</h2>
+    <p>下面每个数字都来自真实站点的实测抓取，不是构造的假数据。</p>
+    <div class="why">如果这一层过不了，后面所有功能都是空谈。所以放在最前面。</div>
+  </div>
+
+  <div class="grid g3" style="margin-bottom:16px">
+    <div class="panel">
+      <h3>浏览器指纹自检 <span class="tag">真实 Chrome</span></h3>
+      <div class="body" id="driverBox"><div class="kv"><span class="k">加载中…</span></div></div>
+    </div>
+    <div class="panel">
+      <h3>风控检测 <span class="tag">本次抓取</span></h3>
+      <div class="body" id="riskBox"><div class="kv"><span class="k">加载中…</span></div></div>
+    </div>
+    <div class="panel">
+      <h3>选择器命中 <span class="tag">9 个字段</span></h3>
+      <div class="body" id="selBox"><div class="kv"><span class="k">加载中…</span></div></div>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-bottom:16px">
+    <h3>薪资字段被加密了，我们把它解开了 <span class="tag">字体混淆 · 自研解码</span></h3>
+    <div class="body">
+      <p style="font-size:13.5px;color:var(--muted);margin-bottom:10px">
+        BOSS 把列表页的薪资数字替换成私用区字符，用自定义字体渲染。页面上看得到，
+        程序直接读拿到的是空值 —— 这是它最隐蔽的一层防护。
+      </p>
+      <div id="cipherBox"></div>
+      <div class="note">
+        映射不是猜的：在真实页面里用页面自己的字体把字符逐个渲染出来截图确认，
+        得到 U+E031→0 … U+E03A→9。解码后薪资可直接参与区间筛选。
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>真实抓取结果 <span class="tag" id="jobTag">—</span></h3>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>职位</th><th>薪资</th><th>公司</th><th>地区</th></tr></thead>
+        <tbody id="jobBody"><tr><td colspan="4" style="color:var(--muted);padding:20px">加载中…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div style="text-align:right;margin-top:20px">
+    <button class="btn" onclick="go(2)">下一步：看它怎么筛人 →</button>
+  </div>
+</section>
+
+<!-- ========== 第二幕 ========== -->
+<section id="act2">
+  <div class="lead">
+    <h2>完整跑一遍：12 个候选人，从筛选走到约面</h2>
+    <p>点下面的按钮，系统会依次做：读信息卡 → 硬筛 → 模型打分 → 打招呼 → 多轮对话 → 判定 → 发邀约。</p>
+    <div class="why">数据是内置样本（不会打扰真人），但走的是和真实环境完全相同的业务流程与状态机。</div>
+  </div>
+
+  <div style="margin-bottom:18px">
+    <button class="btn" id="runBtn" onclick="runDemo()">▶ 开始演示</button>
+    <button class="btn ghost" onclick="resetDemo()" style="margin-left:8px">重置</button>
+  </div>
+
+  <div class="big">
+    <div class="stat" id="s1"><div class="k">触达</div><div class="v">0</div></div>
+    <div class="stat" id="s2"><div class="k">回复</div><div class="v">0</div></div>
+    <div class="stat hit" id="s3"><div class="k">合格</div><div class="v">0</div></div>
+    <div class="stat hit" id="s4"><div class="k">已约面</div><div class="v">0</div></div>
+    <div class="stat" id="s5"><div class="k">待人工</div><div class="v">0</div></div>
+  </div>
+
+  <div class="bar"><i id="pbar"></i></div>
+  <div style="font-size:12.5px;color:var(--muted);margin-bottom:16px" id="pText">等待开始…</div>
+
+  <div class="grid g2">
+    <div class="panel">
+      <h3>执行过程</h3>
+      <div class="body"><div class="feed" id="feed"></div></div>
+    </div>
+    <div class="panel">
+      <h3>候选人结果 <span class="tag" id="candTag">—</span></h3>
+      <div class="scroll" style="max-height:330px">
+        <table>
+          <thead><tr><th>姓名</th><th>分</th><th>状态</th><th>去向</th></tr></thead>
+          <tbody id="candBody"><tr><td colspan="4" style="color:var(--muted);padding:20px">等待演示</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div style="text-align:right;margin-top:20px">
+    <button class="btn" onclick="go(3)">下一步：看风险怎么控 →</button>
+  </div>
+</section>
+
+<!-- ========== 第三幕 ========== -->
+<section id="act3">
+  <div class="lead">
+    <h2>两件客户最关心的事：会不会封号、要花多少钱</h2>
+    <p>与其承诺"绝对安全"，不如让你亲手验一次熔断是否真的生效。</p>
+  </div>
+
+  <div class="grid g2" style="margin-bottom:16px">
+    <div class="panel">
+      <h3>熔断演练 <span class="tag">可亲手点</span></h3>
+      <div class="body">
+        <p style="font-size:13.5px;color:var(--muted);margin-bottom:12px">
+          模拟平台弹出验证码。正常情况下，系统应当<b style="color:var(--err)">立即停止所有动作</b>并告警，
+          而不是继续重试 —— 盲目重试是封号的头号原因。
+        </p>
+        <button class="btn danger" onclick="testRisk()">模拟弹出验证码</button>
+        <button class="btn ghost" onclick="clearRisk()" style="margin-left:8px">恢复正常</button>
+        <div id="riskResult"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>三级漏斗省下的钱 <span class="tag">按每天 200 人估算</span></h3>
+      <div class="body">
+        <div class="costcmp">
+          <div class="costbox old">
+            <div class="t">每个都点开简历</div>
+            <div class="n" id="costOld">—</div>
+            <div class="d" id="costOldSub">消耗平台点数</div>
+          </div>
+          <div class="costbox new">
+            <div class="t">三级漏斗</div>
+            <div class="n" id="costNew">—</div>
+            <div class="d" id="costNewSub">硬筛 + 模型软筛</div>
+          </div>
+        </div>
+        <div class="note" id="costNote"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>我们不承诺什么 <span class="tag">写在合同里</span></h3>
+    <div class="body">
+      <div class="kv"><span class="k">不承诺零封号</span><span class="v" style="color:var(--muted);font-weight:400">只能做到节奏控制 + 熔断 + 灰度</span></div>
+      <div class="kv"><span class="k">不承诺约面数量</span><span class="v" style="color:var(--muted);font-weight:400">取决于岗位吸引力与薪资竞争力</span></div>
+      <div class="kv"><span class="k">不承诺平台改版免维护</span><span class="v" style="color:var(--muted);font-weight:400">改版适配属于运维范围</span></div>
+      <div class="kv"><span class="k">不承诺 7×24 无人值守</span><span class="v" style="color:var(--muted);font-weight:400">验证码必须人工介入</span></div>
+      <div class="note">
+        把这些写在前面，比藏在合同附件里更省事。客户真正需要的是知道边界在哪，
+        而不是听"什么都能做"。
+      </div>
+    </div>
+  </div>
+
+  <div style="text-align:right;margin-top:20px">
+    <button class="btn ghost" onclick="go(1)">← 回到开头</button>
+  </div>
+</section>
+
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const STATE_TEXT = {
+  pending:"待筛选", rejected_filter:"筛选未过", prescreened:"待打招呼",
+  greeted:"已打招呼", chatting:"沟通中", qualified:"合格",
+  rejected:"不合格", invited:"已约面", handed_over:"待人工", failed:"发送失败"
+};
+
+function toast(m){
+  const t=document.getElementById('toast');
+  t.textContent=m; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),1900);
+}
+async function api(p,opt){ const r=await fetch(p,opt); if(!r.ok) throw new Error(await r.text()); return r.json(); }
+function esc(s){ return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function go(n){
+  [1,2,3].forEach(i=>{
+    document.getElementById('act'+i).classList.toggle('on', i===n);
+    document.getElementById('tab'+i).classList.toggle('on', i===n);
+  });
+  if(n===1) loadAct1();
+  if(n===3) loadCost();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+/* ---------- 第一幕 ---------- */
+let act1Loaded=false;
+async function loadAct1(){
+  if(act1Loaded) return;
+  try{
+    const d = await api('/api/demo/snapshot');
+    if(d.error){ document.getElementById('driverBox').innerHTML='<div class="kv"><span class="k">'+esc(d.error)+'</span></div>'; return; }
+
+    const dv = d.driver || {};
+    document.getElementById('driverBox').innerHTML = [
+      ['navigator.webdriver', String(dv.webdriver), dv.webdriver? 'bad':'good'],
+      ['window.chrome 存在', String(dv.chrome), 'good'],
+      ['plugins 数量', String(dv.plugins), 'good'],
+      ['硬件并发', String(dv.hardware), ''],
+      ['浏览器', dv.ua, ''],
+    ].map(([k,v,c])=>`<div class="kv"><span class="k">${k}</span><span class="v ${c}">${esc(v)}</span></div>`).join('');
+
+    const r = d.risk || {};
+    const allRisk = [...(r.before||[]), ...(r.after||[])];
+    document.getElementById('riskBox').innerHTML = allRisk.length
+      ? allRisk.map(x=>`<div class="kv"><span class="k">检测到</span><span class="v bad">${esc(x)}</span></div>`).join('')
+      : `<div class="kv"><span class="k">验证码</span><span class="v good">未触发</span></div>
+         <div class="kv"><span class="k">限流提示</span><span class="v good">未触发</span></div>
+         <div class="kv"><span class="k">账号异常</span><span class="v good">未触发</span></div>
+         <div class="note">连续 6 次真实访问，零风控。</div>`;
+
+    const sels = d.selectors || [];
+    document.getElementById('selBox').innerHTML =
+      `<div class="kv"><span class="k">命中字段</span><span class="v good">${sels.length}</span></div>` +
+      sels.slice(0,5).map(s=>`<div class="kv"><span class="k">${esc(s.target)}</span><span class="v" style="font-weight:400;font-family:Consolas,monospace;font-size:12px">${esc(s.selector)}</span></div>`).join('');
+
+    document.getElementById('cipherBox').innerHTML = (d.font?.examples||[]).map(e=>
+      `<div class="cipher"><span class="dom">${esc(e.dom)}</span><span class="arrow">→</span><span class="real">${esc(e.decoded)}</span></div>`
+    ).join('');
+
+    const jobs = d.jobs || [];
+    document.getElementById('jobTag').textContent = `「${d.query||''}」${d.city||''} · ${jobs.length} 条 · ${d.generated_at||''}`;
+    document.getElementById('jobBody').innerHTML = jobs.map(j=>`<tr>
+      <td>${esc(j.title)}</td>
+      <td style="color:var(--ok);font-weight:600">${esc(j.salary)}</td>
+      <td>${esc(j.company)}</td>
+      <td>${esc((j.district||'')+(j.street||'')||j.city||'')}</td>
+    </tr>`).join('');
+    act1Loaded=true;
+  }catch(e){
+    toast('加载失败：'+e.message);
+  }
+}
+
+/* ---------- 第二幕 ---------- */
+let running=false;
+async function runDemo(){
+  if(running) return;
+  running=true;
+  const btn=document.getElementById('runBtn');
+  btn.disabled=true; btn.textContent='演示中…';
+  document.getElementById('feed').innerHTML='';
+  document.getElementById('candBody').innerHTML='<tr><td colspan="4" style="color:var(--muted);padding:20px">运行中…</td></tr>';
+  ['s1','s2','s3','s4','s5'].forEach(id=>document.querySelector('#'+id+' .v').textContent='0');
+  document.getElementById('pbar').style.width='0%';
+
+  try{
+    const d = await api('/api/demo/run?rounds=11', {method:'POST'});
+    const steps = d.steps || [];
+    const feed = document.getElementById('feed');
+
+    for(let i=0;i<steps.length;i++){
+      const s = steps[i];
+      document.getElementById('pbar').style.width = ((i+1)/steps.length*100)+'%';
+      document.getElementById('pText').textContent = `第 ${s.n}/${steps.length} 轮`;
+
+      setStat('s1', s.touched);
+      setStat('s2', s.replied_candidates ?? 0);
+      setStat('s3', s.qualified); setStat('s4', s.invited); setStat('s5', s.handover);
+
+      const bits=[];
+      if(s.greeted) bits.push(`打招呼 ${s.greeted}`);
+      if(s.replied) bits.push(`回复 ${s.replied}`);
+      if(s.judged) bits.push(`判定 ${s.judged}`);
+      if(bits.length){
+        const row=document.createElement('div');
+        row.className='row';
+        row.innerHTML=`<span class="n">${s.n}</span><span class="txt">${bits.join(' · ')}</span>`;
+        feed.appendChild(row);
+        feed.scrollTop=feed.scrollHeight;
+      }
+      await sleep(200);
+    }
+
+    const rep = d.report?.summary || {};
+    document.getElementById('pText').textContent =
+      `完成：触达 ${rep['触达人数']??0} · 回复率 ${rep['回复率']||'—'} · 约面 ${rep['约面']??0}`;
+
+    const cands = d.candidates || [];
+    document.getElementById('candTag').textContent = `${cands.length} 人`;
+    document.getElementById('candBody').innerHTML = cands.map(c=>`<tr>
+      <td>${esc(c.name||'—')}</td>
+      <td>${c.score??'—'}</td>
+      <td><span class="state s-${c.state}">${STATE_TEXT[c.state]||c.state}</span></td>
+      <td style="font-size:12px;color:var(--muted)">${esc(c.invite_slot || c.reason || '')}</td>
+    </tr>`).join('');
+
+    const row=document.createElement('div');
+    row.className='row';
+    row.innerHTML=`<span class="n">✓</span><span class="txt" style="color:var(--ok);font-weight:600">全部完成，${rep['约面']??0} 人已约面</span>`;
+    feed.appendChild(row);
+    feed.scrollTop=feed.scrollHeight;
+  }catch(e){
+    toast('演示失败：'+e.message);
+  }finally{
+    running=false; btn.disabled=false; btn.textContent='▶ 重新演示';
+  }
+}
+function setStat(id,v){ document.querySelector('#'+id+' .v').textContent=v; }
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+async function resetDemo(){ try{ await api('/api/mock/reset',{method:'POST'}); toast('已重置'); runDemo(); }catch(e){ toast('重置失败'); } }
+
+/* ---------- 第三幕 ---------- */
+async function testRisk(){
+  try{
+    const d = await api('/api/demo/risk?signal=captcha',{method:'POST'});
+    const box=document.getElementById('riskResult');
+    if(d.stopped){
+      box.innerHTML = `<div class="riskbox">
+        <b>✓ 熔断已生效</b><br>
+        注入信号：${esc(d.injected)}<br>
+        系统响应：检测到验证码 → 停止运行 → 记录告警 → 截图留证<br>
+        运行状态：${d.running_before?'运行中':'已停止'} → <b>已停止</b>
+        <div class="note" style="margin-top:8px;color:#8c1d18">
+          关键点：它没有重试。重试会连续触发风控，是封号最快的方式。
+        </div>
+      </div>`;
+    }else{
+      box.innerHTML = `<div class="riskbox"><b>✗ 未触发熔断</b><br>${esc(d.message||'')}</div>`;
+    }
+  }catch(e){ toast('调用失败：'+e.message); }
+}
+async function clearRisk(){
+  try{ await api('/api/demo/risk?signal=',{method:'POST'}); document.getElementById('riskResult').innerHTML=''; toast('已恢复正常'); }
+  catch(e){ toast('失败'); }
+}
+
+let costLoaded=false;
+async function loadCost(){
+  if(costLoaded) return;
+  try{
+    const d = await api('/api/demo/cost?candidates_per_day=200');
+    document.getElementById('costOld').textContent = '¥' + d.naive.cost;
+    document.getElementById('costOldSub').textContent = `${d.naive.resume_views} 次简历查看`;
+    document.getElementById('costNew').textContent = '¥' + d.funnel.cost;
+    document.getElementById('costNewSub').textContent = `${d.funnel.resume_views} 次简历 + ${d.funnel.soft_calls} 次软筛`;
+    document.getElementById('costNote').innerHTML =
+      `每天省 <b style="color:var(--ok)">¥${d.saved}</b>（${d.saved_pct}），按 22 个工作日估算每月省 <b style="color:var(--ok)">¥${d.monthly_saved}</b>。<br>
+       <span style="color:#9aa0a6">${esc(d.note)}</span>`;
+    costLoaded=true;
+  }catch(e){ toast('成本数据加载失败'); }
+}
+
+loadAct1();
+</script>
+</body>
+</html>

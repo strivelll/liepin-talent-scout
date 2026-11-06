@@ -1,0 +1,74 @@
+# ===== 求职者画像 =====
+# 这是整个求职端的大脑：匹配、话术、回复都从这里取信息。
+# 写得越具体，AI 生成的招呼和回复越像本人。
+
+profile:
+  name: "张明"
+  years: 0                      # 应届/在校，投"经验不限"和"1年以内"的岗位
+  education: "本科"
+  current: "计算机专业 · 2026 届"
+  city: "长沙"
+
+  # 技能标签（匹配时按关键词命中，也会挑最相关的写进招呼语）
+  skills:
+    - Java
+    - Spring Boot
+    - MySQL
+    - Redis
+    - MyBatis
+    - Linux
+
+  # 亮点：招呼语和对话的弹药。必须是可验证的具体事实。
+  # ⚠️ 以下三条按"计算机专业应届生"的常见情况填写，请按你的真实情况替换或删除。
+  #    写不实的内容，聊到第二句就会露馅。
+  highlights:
+    - key: "计算机专业本科，Java 基础扎实"
+      tags: [Java]
+      detail: "计算机专业本科在读，系统学过数据结构、操作系统、数据库，Java 是主语言"
+    - key: "做过 Spring Boot 课程项目"
+      tags: [Spring Boot, MySQL]
+      detail: "课程项目用 Spring Boot + MySQL 做过增删改查和登录鉴权"
+    - key: "熟悉 Linux 基本操作"
+      tags: [Linux]
+      detail: "平时在 Linux 环境下写代码和部署，会用常用命令排查问题"
+
+  # 求职期望：用于硬筛，不满足的直接跳过，不浪费招呼额度
+  expected:
+    salary_min: 6000
+    salary_max: 15000
+    cities: ["长沙"]
+    titles: ["Java", "后端", "服务端", "开发工程师"]
+    # 一票否决：JD 里出现这些词就直接放弃
+    deal_breakers: ["外包", "驻场", "销售", "无底薪", "纯提成", "培训贷"]
+
+  style:
+    tone: "简洁自然，像正常聊天，不谄媚不客套"
+    max_chars: 60
+    emoji: false
+    hook_rule: "必须提到 JD 里的一个具体点，或自己的一个量化成果"
+
+  resume:
+    image_path: "data/resume/resume.png"
+    pdf_path: "data/resume/resume.pdf"
+    send_policy: "ask"
+    send_after_rounds: 3
+
+# ===== 求职端运行参数 =====
+run:
+  # 每天最多打招呼数量（保守起步，账号安全优先）
+  query: "Java"                # 抓取关键词
+  city_code: "101250100"       # 城市编码（长沙）
+  daily_greet_limit: 30
+  hourly_greet_limit: 10
+  # 匹配分数线，低于此分不打
+  match_threshold: 62
+  # 每次运行最多处理多少个职位
+  batch_size: 10
+  # 打招呼间隔（秒），随机区间
+  greet_interval: [25, 60]
+  # 回复 HR 的间隔，模拟真人思考
+  reply_interval: [6, 20]
+  # 运行时段
+  window: ["09:00", "21:00"]
+  # 遇到验证码/限流立即停止
+  stop_on_risk: true

@@ -1,0 +1,96 @@
+# ===== 全局配置 =====
+# 说明：本文件是运行时的唯一开关入口。改动后重启服务生效。
+
+app:
+  name: "AI 招聘助手 MVP"
+  host: "127.0.0.1"          # 只监听本机，不对外暴露
+  port: 8899
+  timezone: "Asia/Shanghai"
+
+# 运行模式：
+#   mock  = 不连 BOSS，用内置模拟数据跑通全链路（用于演示与业务逻辑验证）
+#   real  = 用 Patchright 驱动系统 Chrome 操作真实页面
+mode: "mock"
+
+# ===== Mock 演示参数 =====
+mock:
+  fail_rate: 0.02          # 模拟打招呼失败的概率，演示失败分支时可临时调高
+
+# ===== 大模型 =====
+llm:
+  enabled: true
+  # provider 支持：deepseek / openai / custom（任何 OpenAI 兼容接口）
+  provider: "deepseek"
+  base_url: "https://api.deepseek.com/v1"
+  model: "deepseek-chat"
+  # API Key 不写在这里，从环境变量读取，见 .env.example
+  api_key_env: "LLM_API_KEY"
+  temperature: 0.7
+  max_tokens: 500
+  timeout: 30
+  # 成本估算（元/千 token），用于日报统计
+  price_per_1k_input: 0.001
+  price_per_1k_output: 0.002
+
+# ===== 节奏与上限（防风控核心）=====
+pacing:
+  greet_interval_sec: [18, 45]      # 每次打招呼之间的随机间隔（秒），非均匀采样
+  reply_interval_sec: [8, 25]       # 回复候选人的随机间隔
+  read_dwell_sec: [3, 9]            # 停留在页面的"阅读"时间
+  batch_size: 12                    # 每批处理人数
+  batch_rest_sec: [180, 420]        # 批次之间的休息
+  daily_greet_limit: 40             # 单账号每日打招呼上限（保守起步）
+  hourly_greet_limit: 12
+  run_window: ["09:00", "20:00"]    # 允许运行的时段
+  stop_on_captcha: true             # 遇到验证码立即停止
+  max_consecutive_errors: 3         # 连续错误熔断阈值
+
+# ===== 筛选漏斗 =====
+funnel:
+  hard_filter: true                 # 第一级：信息卡硬筛（零成本）
+  llm_prescreen: true               # 第二级：模型软筛
+  llm_prescreen_threshold: 60       # 软筛分数线（0-100）
+  deep_read_limit_per_day: 8        # 第三级：深度阅读份数上限（控制点数消耗）
+
+# ===== 对话 =====
+chat:
+  max_rounds: 8                     # 单候选人最大对话轮次
+  max_followups: 2                  # 信息不足时最多追问轮数
+  reply_delay_simulate: true        # 模拟真人回复延迟
+  context_window: 20                # 传入模型的最近消息条数
+  handover_keywords:                # 命中即转人工
+    - "薪资"
+    - "工资"
+    - "多少钱"
+    - "入职时间"
+    - "合同"
+    - "社保"
+    - "五险一金"
+    - "试用期"
+    - "加班"
+
+# ===== 面试邀约 =====
+invite:
+  enabled: true
+  trigger_score: 70                 # 判定合格分数线
+  slots:                            # 可约时段模板（按顺序分配，用完即另约）
+    - "周一 14:00-15:00"
+    - "周二 10:00-11:00"
+    - "周三 15:00-16:00"
+    - "周四 10:00-11:00"
+    - "周五 14:00-15:00"
+    - "周一 16:00-17:00"
+    - "周二 14:00-15:00"
+    - "周三 10:00-11:00"
+    - "周四 15:00-16:00"
+    - "周五 16:00-17:00"
+  address: "线上面试（腾讯会议，链接另行发送）"
+  duration_min: 30
+
+# ===== 日志与存储 =====
+storage:
+  db_path: "data/recruit.db"
+  log_dir: "data/logs"
+  screenshot_dir: "data/screenshots"
+  resume_dir: "data/resumes"
+  retention_days: 90
